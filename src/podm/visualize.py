@@ -8,9 +8,11 @@ from podm.metrics import MethodAveragePrecision, MetricPerClass
 
 def plot_precision_recall_curve(result: MetricPerClass,
                                 dest,
+                                lrs_class,
                                 method: MethodAveragePrecision = MethodAveragePrecision.AllPointsInterpolation,
                                 show_ap: bool=False,
-                                show_interpolated_precision: bool=False):
+                                show_interpolated_precision: bool=False,
+                                ):
     """PlotPrecisionRecallCurve
     Plot the Precision x Recall curve for a given class.
     Args:
@@ -42,12 +44,26 @@ def plot_precision_recall_curve(result: MetricPerClass,
                     nrec.append(r)
                     nprec.append(max([mpre[int(id)] for id in idxEq]))
             plt.plot(nrec, nprec, 'or', label='11-point interpolated precision')
-    plt.plot(result.recall, result.precision, '-o')
+    plt.plot(result.recall, result.precision, '-')
     # add a new penultimate point to the list (mrec[-2], 0.0)
     # since the last line segment (and respective area) do not affect the AP value
     area_under_curve_x = mrec[:-1].tolist() + [mrec[-2]] + [mrec[-1]]
     area_under_curve_y = mpre[:-1].tolist() + [0.0] + [mpre[-1]]
     plt.fill_between(area_under_curve_x, 0, area_under_curve_y, alpha=0.2, edgecolor='r')
+    
+    #plot the plots at percentage threshold location
+    for index, percentage in lrs_class:
+        plt.plot(result.recall[index],result.precision[index],'mo')
+        label = "{:.2f}".format(percentage)
+
+        plt.annotate(label, # this is the text
+                    (result.recall[index],result.precision[index]), # these are the coordinates to position the label
+                    textcoords="offset points", # how to position the text
+                    xytext=(12,6), # distance from text to points (x,y)
+                    fontsize=8,
+                    ha='center') # horizontal alignment can be left, right or center
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
 
     plt.xlabel('Recall')
     plt.ylabel('Precision')
@@ -63,9 +79,11 @@ def plot_precision_recall_curve(result: MetricPerClass,
 
 def plot_precision_recall_curve_all(results: Dict[Any, MetricPerClass],
                                     dest_dir,
+                                    lrs_list,
                                     method: MethodAveragePrecision = MethodAveragePrecision.AllPointsInterpolation,
                                     show_ap: bool=False,
-                                    show_interpolated_precision: bool=False):
+                                    show_interpolated_precision: bool=False,
+                                    ):
     """
     Plot the Precision x Recall curve for a given class.
 
@@ -79,8 +97,8 @@ def plot_precision_recall_curve_all(results: Dict[Any, MetricPerClass],
             precision (default = False);
     """
     for label, result in results.items():
-        dest = str(dest_dir / (label + '_pr.png'))
+        dest = str(dest_dir +'/'+ label + '_pr.png')
         try:
-            plot_precision_recall_curve(result, dest, method, show_ap, show_interpolated_precision)
+            plot_precision_recall_curve(result, dest,lrs_list[label], method, show_ap, show_interpolated_precision)
         except:
             print(f'{label}: Cannot plot')

@@ -89,7 +89,8 @@ class MetricPerClass:
 def get_pascal_voc_metrics(gold_standard: List[BoundingBox],
                            predictions: List[BoundingBox],
                            iou_threshold: float = 0.5,
-                           method: MethodAveragePrecision = MethodAveragePrecision.AllPointsInterpolation
+                           method: MethodAveragePrecision = MethodAveragePrecision.AllPointsInterpolation,
+                           pr_percents: List[float] = [0.95,0.9,0.8,0.7,0.5,0.25],
                            ) -> Dict[str, MetricPerClass]:
     """Get the metrics used by the VOC Pascal 2012 challenge.
 
@@ -107,7 +108,7 @@ def get_pascal_voc_metrics(gold_standard: List[BoundingBox],
 
     # Get all classes
     categories = sorted(set(b.category for b in gold_standard + predictions))
-
+    lr_list={}
     # Precision x Recall is obtained individually by each class
     # Loop through by classes
     for category in categories:
@@ -119,6 +120,28 @@ def get_pascal_voc_metrics(gold_standard: List[BoundingBox],
         preds = sorted(preds, key=lambda b: b.score, reverse=True)
         tps = np.zeros(len(preds))
         fps = np.zeros(len(preds))
+
+        percents = pr_percents.copy()
+        lrs = []
+        #get index of percentage sorted values
+        #left end condition
+        for i, pred in enumerate(preds):
+            #right end
+            if len(percents) == 0 or i == len(preds)-1:
+                #add the last
+                lrs.append((len(preds)-1,preds[len(preds)-1].score))
+                break
+            #left end
+            elif preds[i].score < percents[0]:
+                #add the first
+                if i == 0:
+                    lrs.append((i,pred.score))
+                del percents[0]
+            elif preds[i].score > percents[0] and preds[i+1].score < percents[0]:
+                #append the left percentage cut off
+                lrs.append((i,pred.score))
+                del percents[0]
+        lr_list[category]=lrs
 
         # create dictionary with amount of gts for each image
         counter = Counter([cc.image for cc in golds])
@@ -174,7 +197,8 @@ def get_pascal_voc_metrics(gold_standard: List[BoundingBox],
         r.num_groundtruth = len(golds)
         r.num_detection = len(preds)
         ret[category] = r
-    return ret
+        
+    return ret,lr_list
 
 
 def calculate_all_points_average_precision(recall: List[float], precision: List[float]) \

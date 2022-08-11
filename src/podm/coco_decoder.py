@@ -31,8 +31,10 @@ def parse_image(obj: Dict) -> PCOCOImage:
     img.height = obj['height']
     img.width = obj['width']
     img.file_name = obj['file_name']
-    img.flickr_url = obj['flickr_url']
-    img.coco_url = obj['coco_url']
+    if 'flickr_url' in obj:
+        img.flickr_url = obj['flickr_url']
+    if 'coco_url' in obj:
+        img.coco_url = obj['coco_url']
     img.date_captured = obj['date_captured']
     img.license = obj['license']
     return img
@@ -40,7 +42,8 @@ def parse_image(obj: Dict) -> PCOCOImage:
 
 def parse_bounding_box(obj: Dict) -> PCOCOBoundingBox:
     ann = PCOCOBoundingBox()
-    ann.id = obj['id']
+    if 'id' in obj:
+        ann.id = obj['id']
     ann.category_id = obj['category_id']
     ann.image_id = obj['image_id']
     ann.xtl = obj['bbox'][0]
@@ -93,7 +96,7 @@ def parse_object_detection_dataset(coco_obj: Dict) -> PCOCOObjectDetectionDatase
         dataset.images.append(img)
 
     for ann_obj in coco_obj['annotations']:
-        if 'segmentation' in ann_obj and len(ann_obj['segmentation']) > 0:
+        if 'segmentation' in ann_obj and ann_obj['segmentation'] is not None and len(ann_obj['segmentation']) > 0 :
             ann = parse_segments(ann_obj)
         else:
             ann = parse_bounding_box(ann_obj)
