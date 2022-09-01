@@ -127,20 +127,36 @@ def get_pascal_voc_metrics(gold_standard: List[BoundingBox],
         #left end condition
         for i, pred in enumerate(preds):
             #right end
+            #add the last
             if len(percents) == 0 or i == len(preds)-1:
-                #add the last
                 lrs.append((len(preds)-1,preds[len(preds)-1].score))
                 break
-            #left end
-            elif preds[i].score < percents[0]:
-                #add the first
-                if i == 0:
+            #in between search
+            new_percents = percents.copy()
+            p_del = 0
+            for j,percent in enumerate(percents):
+                #delete percent in list if current and one after is lower
+                if preds[i+1].score < percent and preds[i].score < percent:
+                    del new_percents[j-p_del]
+                    p_del+= 1
+                    if len(new_percents) == 0:
+                        break
+                # add inbetween 
+                elif preds[i].score > percent and preds[i+1].score < percent:
+                    #append the left percentage cut off
                     lrs.append((i,pred.score))
-                del percents[0]
-            elif preds[i].score > percents[0] and preds[i+1].score < percents[0]:
-                #append the left percentage cut off
-                lrs.append((i,pred.score))
-                del percents[0]
+                    del new_percents[j-p_del]
+                    percents = new_percents
+                    break
+                #skip current score if greater 
+                elif preds[i].score > percent and preds[i+1].score > percent:
+                    #left end
+                    #add the first (highest confidence score) if there are nothing else 
+                    if i == 0:
+                        lrs.append((i,pred.score))
+                    percents = new_percents
+                    break
+
         lr_list[category]=lrs
 
         # create dictionary with amount of gts for each image

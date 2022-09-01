@@ -52,10 +52,12 @@ def plot_precision_recall_curve(result: MetricPerClass,
     plt.fill_between(area_under_curve_x, 0, area_under_curve_y, alpha=0.2, edgecolor='r')
     
     #plot the plots at percentage threshold location
+    print(result.label)
     for index, percentage in lrs_class:
         plt.plot(result.recall[index],result.precision[index],'mo')
-        label = "{:.2f}".format(percentage)
-
+        label = f"{percentage:.4f}"
+        label_p = f"confidence:{percentage:.4f} recall:{result.recall[index]:.4f} precision:{result.precision[index]:.4f}"
+        print(label_p)
         plt.annotate(label, # this is the text
                     (result.recall[index],result.precision[index]), # these are the coordinates to position the label
                     textcoords="offset points", # how to position the text
