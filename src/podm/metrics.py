@@ -84,7 +84,12 @@ class MetricPerClass:
     @staticmethod
     def mAP(results: Dict[Any, 'MetricPerClass']):
         return np.average([m.ap for m in results.values() if m.num_groundtruth > 0])
-
+    
+    def __add__(self, other):
+        if (isinstance(other, MetricPerClass)):
+            return MetricPerClass(other.value + self.value)
+        else:
+            return MetricPerClass(other + self.value)
 
 def get_pascal_voc_metrics(gold_standard: List[BoundingBox],
                            predictions: List[BoundingBox],
